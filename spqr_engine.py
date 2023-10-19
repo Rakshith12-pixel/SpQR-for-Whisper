@@ -5,7 +5,6 @@ from typing import NamedTuple, Optional, Union
 
 import torch
 from tqdm.auto import tqdm
-
 from quant_groups import Quantizer, dequantize, quantize
 from weight_permutation import get_permutation_order
 
@@ -20,6 +19,7 @@ class SPQRUtil:
         self.H = torch.zeros((self.columns, self.columns), device=self.dev)
         self.nsamples = 0
 
+    
     def add_batch(self, inp):
         assert self.H is not None, "Already ran quantization; cannot add more data batches"
         if len(inp.shape) == 2:
@@ -34,6 +34,8 @@ class SPQRUtil:
         self.nsamples += tmp
         inp = math.sqrt(2 / self.nsamples) * inp.float()
         self.H += inp.matmul(inp.t())
+
+
 
     def quantize(
         self,
@@ -281,6 +283,31 @@ class SPQRUtil:
             save_quant_dict=save_quant_dict,
         )
 
+
+from torch import nn
+from transformers import WhisperConfig, WhisperModel
+import torch
+# Initializing a Whisper tiny style configuration
+configuration = WhisperConfig()
+ # Initializing a model (with random weights) from the tiny style configuration
+model = WhisperModel(configuration)
+def get_linear_layers(model):
+    linear_layers = []
+    for layer in model.modules():
+        if isinstance(layer, torch.nn.Linear) and not isinstance(layer,torch.nn.LayerNorm):
+            linear_layers.append(layer)
+    return linear_layers
+
+linear_layers = get_linear_layers(model)
+for i in linear_layers:
+    print(i)
+
+#spqr_utils_list = []
+for linear_layer in linear_layers:
+    spqr_utils = SPQRUtil(linear_layer)
+#    spqr_utils.add_batch(your_input_data)  # Add your input data here
+#    quantized_layer = spqr_utils.quantize(bits=4, blocksize=128, ...)  # Customize quantization options
+#    spqr_utils_list.append((linear_layer, quantized_layer))
 
 class QuantizationResult(NamedTuple):
     """A collection of codebooks, indices and assorted statistics produced by SPQRUtil; not memory-optimized!"""

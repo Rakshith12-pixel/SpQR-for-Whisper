@@ -3,8 +3,8 @@ from contextlib import contextmanager
 import torch
 import torch.nn as nn
 from tqdm import trange
-from transformers import AutoConfig, AutoModelForCausalLM
-
+from transformers import AutoConfig, AutoModelForSeq2SeqLM
+from transformers import WhisperConfig, WhisperModel
 from quant_groups import dequantize
 
 MODEL_ERROR_MSG = "Unsupported model type {} - only 'llama' and 'falcon' supported"
@@ -34,17 +34,24 @@ def get_model(model_path, load_quantized=None, dtype="auto"):
         if load_quantized:
             print("Initializing model with random weights...")
             config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)  # consider trust_remote_code=True
-            model = AutoModelForCausalLM.from_config(config, trust_remote_code=True, torch_dtype=dtype).eval()
+            model = AutoModelForSeq2SeqLM.from_config(config, trust_remote_code=True, torch_dtype=dtype).eval()
             print("Loading quantized model ...")
             model = load_quantized_model(model, load_quantized)
         else:
             print("Loading pretrained model ...")
-            model = AutoModelForCausalLM.from_pretrained(
-                pretrained_model_name_or_path=model_path,
-                trust_remote_code=True,
-                torch_dtype=dtype,
+            #model = AutoModelForSeq2SeqLM.from_pretrained(
+            #    pretrained_model_name_or_path=model_path,
+            #    trust_remote_code=True,
+            #    torch_dtype=dtype,
                 # local_files_only=True
-            )
+           #)
+           # Initializing a Whisper tiny style configuration
+
+            configuration = WhisperConfig()
+
+# Initializing a model (with random weights) from the tiny style configuration
+
+            model = WhisperModel(configuration)
     model.seqlen = 2048
 
     print("Model loaded sucessfully ...")
@@ -54,7 +61,11 @@ def get_model(model_path, load_quantized=None, dtype="auto"):
 
 def get_model_head(model):
     head = torch.nn.ModuleList()
-    if model.config.model_type == "llama":
+    if model.config.model_type == "whisper":
+        if model.model.norm is not None:
+            head.append(model.model.norm)
+        head.append(model.lm_head)
+    elif model.config.model_type == "llama":
         if model.model.norm is not None:
             head.append(model.model.norm)
         head.append(model.lm_head)
@@ -91,6 +102,11 @@ def get_lm_logits(inps_, model):
         if model.model.decoder.project_out is not None:
             hidden_states = model.model.decoder.project_out(hidden_states)
         lm_logits = model.lm_head(hidden_states)
+    elif model.config.model_type == "whisper":
+        hidden_states = inps_.unsqueeze(0)
+        if model.layer_norm is not None:
+            hidden_states = model.layer_norm(hidden_states)
+        lm_logits = model.lm_head(hidden_states)
     else:
         raise ValueError(MODEL_ERROR_MSG.format(model.config.model_type))
     return lm_logits
@@ -103,11 +119,13 @@ def get_layers(model):
         return model.transformer.h
     elif model.config.model_type == "opt":
         return model.model.decoder.layers
+    elif model.config.model_type == "whisper":
+        return model.encoder.layers+model.decoder.layers
     else:
         raise ValueError(MODEL_ERROR_MSG.format(model.config.model_type))
 
 
-def find_sublayers(module, layers=(nn.Conv2d, nn.Linear)):
+def find_sublayers(module, layers=(nn.Conv1d, nn.Embedding, nn.ModuleList, nn.LayerNorm, nn.Linear)):
     res = {}
     for name, layer in module.named_modules():
         if isinstance(layer, layers):
@@ -139,6 +157,11 @@ def get_sequential_groups(model):
             ["fc1"],
             ["fc2"],
         ]
+    elif model.config.model_type == "whisper":
+        return [
+        ["fc1"],
+        ["fc2"],
+    ]
     else:
         raise ValueError(MODEL_ERROR_MSG.format(model.config.model_type))
 

@@ -76,7 +76,8 @@ def quantize_model(model, args, device):
             model_path=args.model_path,
             seqlen=model.seqlen,
         )
-        results = quantize_spqr(model, dataloader, args, device)
+
+    results = quantize_spqr(model, dataloader, args, device)
     print(f"quantization time: {time.time() - tick:.1f}")
     return results
 
@@ -194,7 +195,7 @@ def quantize_spqr(model, dataloader, args, device):
         for k, v in forward_args.items():
             forward_args[k] = v.to(layer_dev) if isinstance(v, torch.Tensor) else v
 
-        if args.true_sequential:
+        if not args.true_sequential:
             sequential = get_sequential_groups(model)
         else:
             sequential = [list(all_sublayers.keys())]
@@ -204,6 +205,7 @@ def quantize_spqr(model, dataloader, args, device):
 
             spqr_handlers = {}
             for sublayer_name in subset:
+               # print(sublayer_name)
                 spqr_handlers[sublayer_name] = SPQRUtil(subset[sublayer_name])
 
             def add_batch(name):
@@ -564,29 +566,38 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     print("============  Loading model... ============")
-    model = get_model(args.model_path, args.load, args.dtype).train(False)
+    model = get_model("openai/whisper-small").train(False)
+#    size_before=sys.getsizeof(model)
 
     print("\n============ Quantizing model... ============")
     if args.wbits < 16 and args.load:
         print("\n Warning: You are quantizing quantized model!")
-    quantize_model(model, args, device)
+    quant_model=quantize_model(model, args, device)
 
     print("\n============ Evaluating perplexity... ============")
-    torch.cuda.reset_peak_memory_stats()
-    datasets = ["wikitext2", "ptb", "c4"]
-    if args.new_eval:
-        datasets = ["wikitext2", "ptb-new", "c4-new"]
-    for dataset in datasets:
-        testloader = get_loaders(
-            dataset,
-            seed=args.seed,
-            model_path=args.model_path,
-            seqlen=model.seqlen,
-            eval_mode=True,
-        )
-        args.dataset_name = dataset
-        perplexity_eval(model, testloader, args, device)
+    #torch.cuda.reset_peak_memory_stats()
 
-    print(f"eval: {torch.cuda.max_memory_allocated()=:,}")
-    if args.wandb:
-        wandb.log({"max_cuda_mem_eval": round(torch.cuda.max_memory_allocated() / 1e9, 2)})
+# Define a custom dataset class
+
+# Iterate over the data in batches
+#for batch in data_loader:
+    # Process the batch and pass it through your PyTorch model
+    # model_output = your_model(batch)
+
+#    datasets = ["wikitext2", "ptb", "c4"]
+ #   if args.new_eval:
+ #       datasets = ["wikitext2", "ptb-new", "c4-new"]
+ #   for dataset in datasets:
+ #       testloader = get_loaders(
+ #           dataset,
+ #           seed=args.seed,
+ #           model_path=args.model_path,
+ #           seqlen=model.seqlen,
+ #           eval_mode=True,
+ #       )
+#args.dataset_name = dataset
+#perplexity_eval(model, data_loader, args, device)
+
+#print(f"eval: {torch.cuda.max_memory_allocated()=:,}")
+#if args.wandb:
+#    wandb.log({"max_cuda_mem_eval": round(torch.cuda.max_memory_allocated() / 1e9, 2)})
