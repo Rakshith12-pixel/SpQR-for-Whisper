@@ -245,20 +245,20 @@ def train():
     # dataset
     common_voice = DatasetDict()
     common_voice["train"] = load_dataset("mozilla-foundation/common_voice_11_0","hi", split="train+validation")
- #   common_voice["test"] = load_dataset("mozilla-foundation/common_voice_11_0", "hi", split="test")
+    common_voice["test"] = load_dataset("mozilla-foundation/common_voice_11_0", "hi", split="test")
 
 #    with accelerator.main_process_first():
         # remove unused columns
     common_voice = common_voice.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "path", "segment", "up_votes"])
 
-        # select small dataset for testing
-#    if args.max_train_samples is not None:
-#    common_voice["train"] = common_voice["train"].select(range(100))
+    #select small dataset for testing
+    #if args.max_train_samples is not None:
+    common_voice["train"] = common_voice["train"].select(range(100))
 
-#    if args.max_test_samples is not None:
-#        common_voice["test"] = common_voice["test"].select(range(args.max_test_samples))
+    #if args.max_test_samples is not None:
+    common_voice["test"] = common_voice["test"].select(range(100))
 
-        # resample to 16kHz
+     # resample to 16kHz
     common_voice = common_voice.cast_column("audio", Audio(sampling_rate=16000))
 
 
@@ -300,6 +300,7 @@ def train():
             sampling_rate=sample["sampling_rate"],
             return_attention_mask=forward_attention_mask
         )
+        batch["input_features"] = inputs.input_features[0]
         # process audio length
         batch[model_input_name] = inputs.get(model_input_name)[0]
         batch["input_length"] = len(sample["array"])
@@ -314,26 +315,24 @@ def train():
     
 #    with accelerator.main_process_first():
         # vectorize dataset
-        common_voice = common_voice.map(
-            prepare_dataset,
-            remove_columns=common_voice.column_names["train"])
+    common_voice = common_voice.map(prepare_dataset,remove_columns=common_voice.column_names["train"])
 
 
     # filter data that is shorter than min_input_length or longer than
     # max_input_length
-    def is_audio_in_length_range(length):
-        return length > min_input_length and length < max_input_length
+ #   def is_audio_in_length_range(length):
+ #       return length > min_input_length and length < max_input_length
 
-    common_voice = common_voice.filter(
-        is_audio_in_length_range,
-        input_columns=["audio"]
-    )
+ #   common_voice = common_voice.filter(
+ #       is_audio_in_length_range,
+ #       input_columns=["audio"]
+ #   )
 
 
 
     # cer and wer
-    cer_metric = evaluate.load("cer")
-    wer_metric = evaluate.load("wer")
+#    cer_metric = evaluate.load("cer")
+#    wer_metric = evaluate.load("wer")
 
     # data collator
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(

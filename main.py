@@ -425,6 +425,142 @@ if __name__ == "__main__":
         help="Dataset name [c4, pajama, refinedweb, none, etc.] or path to data where to extract calibration data from.",
     )
     parser.add_argument(
+        "--seed",
+        default=42,
+        type=int,
+    )
+    parser.add_argument(
+        "--model_name_or_path",
+        default="openai/whisper-small",
+        type=str,
+        help="Path to pretrained model or model identifier from huggingface.co/models",
+    )
+    parser.add_argument(
+        "--freeze_encoder",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--data_dir",
+        default="mozilla-foundation/common_voice_11_0",
+        type=str,
+        help="Dataset",
+    )
+    parser.add_argument(
+        "--sampling_rate",
+        default=16000,
+        type=int,
+        help="sampling rate",
+    )
+ #   parser.add_argument(
+ #       "--output_dir",
+ #       default=root+'/models/whisper/'+'whisper_small_cv11',
+ #       type=str,
+ #       help="The output directory where the model checkpoints and predictions will be written.",
+ #   )
+    parser.add_argument(
+        "--resume_from_checkpoint",
+        default=None,
+        type=str,
+        help="checkpoint directory to load model from",
+    )
+    parser.add_argument(
+        "--skip_steps",
+        action="store_true",
+        help="whether to skip steps in dataloader (checkpoint)"
+    )
+    parser.add_argument(
+        "--model_lang",
+        default='hindi',
+        type=str,
+    )
+    parser.add_argument(
+        "--task",
+        default='transcribe',
+        type=str,
+    )
+    parser.add_argument(
+        "--data_lang",
+        default='hi',
+        type=str,
+    )
+    parser.add_argument(
+        '--max_train_samples',
+        type=int,
+        default=None
+    )
+    parser.add_argument(
+        '--max_test_samples',
+        type=int,
+        default=None
+    )
+    parser.add_argument(
+        "--train_batch_size",
+        default=4,
+        type=int,
+    )
+    parser.add_argument(
+        "--eval_batch_size",
+        default=4,
+        type=int,
+    )
+    parser.add_argument(
+        "--train_steps",
+        default=5000,
+        type=int,
+    )
+    parser.add_argument(
+        "--warmup_steps",
+        default=0,
+        type=int,
+    )
+    parser.add_argument(
+        "--gradient_accumulation_steps",
+        default=1,
+        type=int,
+    )
+    parser.add_argument(
+        "--eval_steps",
+        default=1000,
+        type=int,
+    )
+    parser.add_argument(
+        '--num_workers',
+        type=int,
+        default=os.cpu_count(), # os.cpu_count()
+        help="The number of processes to use for the preprocessing."
+    )
+    parser.add_argument(
+        "--lr",
+        default=1e-5,
+        type=float,
+    )
+    parser.add_argument(
+        "--mixed_precision",
+        default='fp16',
+        type=str,
+    )
+    parser.add_argument(
+        '--generation_max_length',
+        type=int,
+        default=225
+    )
+    parser.add_argument(
+        '--num_beams',
+        type=int,
+        default=1
+    )
+    parser.add_argument(
+        '--max_duration_in_seconds',
+        type=float,
+        default=20.0
+    )
+    parser.add_argument(
+        '--min_duration_in_seconds',
+        type=float,
+        default=0.0
+    )
+
+    parser.add_argument(
         "--custom_data_path",
         type=str,
         default=None,
@@ -432,7 +568,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--load", type=str, default=None, help="Path to load quantized statistics.")
     parser.add_argument("--save", type=str, default=None, help="Path to save quantized statistics.")
-    parser.add_argument("--seed", type=int, default=0, help="Seed for sampling the calibration data.")
+    #parser.add_argument("--seed", type=int, default=0, help="Seed for sampling the calibration data.")
     parser.add_argument("--nsamples", type=int, default=128, help="Number of calibration data samples.")
     parser.add_argument(
         "--percdamp",
