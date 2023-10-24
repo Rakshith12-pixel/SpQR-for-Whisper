@@ -426,7 +426,7 @@ def get_loaders(name, nsamples=128, seed=0, seqlen=2048, eval_mode=False, model_
         data = get_c4(nsamples, seqlen, tokenizer, eval_mode=eval_mode)
     elif name.lower() == "c4_new":
         data = get_c4_new(nsamples, seqlen, tokenizer, eval_mode=eval_mode)
-    elif name == "/home/dysl-ai/SpQR/common_voice.py":
+    elif name == "common_voice":
         data = train()
    
     else:
