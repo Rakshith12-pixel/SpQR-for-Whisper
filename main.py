@@ -702,7 +702,8 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     print("============  Loading model... ============")
-    model = get_model("openai/whisper-small").train(False)
+    model = get_model(args.model_path, args.load, args.dtype).train(False)
+ #   model = get_model("openai/whisper-small").train(False)
 #    size_before=sys.getsizeof(model)
 
     print("\n============ Quantizing model... ============")
