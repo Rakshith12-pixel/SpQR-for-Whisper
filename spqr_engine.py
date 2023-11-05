@@ -109,8 +109,8 @@ class SPQRUtil:
             ix = torch.arange(len(H), device=weight.device)
             H[ix, ix] += percdamp * abs(torch.diag(H)).mean()
             del ix
-        H[self.dead, self.dead] = 1
-        weight[:, self.dead] = 0
+        H[self.dead, self.dead] = 1 #alldiag elemts=1
+        weight[:, self.dead] = 0   #sets all weight to zero (now)
         H_inv = torch.cholesky_inverse(torch.linalg.cholesky(H))
         H_inv_cho = torch.linalg.cholesky(H_inv, upper=True)
         H_inv_cho_diag = torch.diag(H_inv_cho)
