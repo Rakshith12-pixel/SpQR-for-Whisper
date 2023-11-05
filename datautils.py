@@ -211,6 +211,14 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             labels = labels[:, 1:]
 
         batch["labels"] = labels
+        
+        for _ in range(nsamples):
+            i = random.randint(0, labels.shape[1] - 20 - 1)
+            j = i + 20
+            inp = labels[:, i:j]
+            tar = inp.clone()
+            tar[:, :-1] = -100
+            trainloader.append((inp, tar))
 
         return batch
     
