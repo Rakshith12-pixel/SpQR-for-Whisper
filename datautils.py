@@ -218,9 +218,12 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             inp = labels[:, i:j]
             tar = inp.clone()
             tar[:, :-1] = -100
-            trainloader.append((inp, tar))
+        batch_dict = {
+        'input_ids': torch.stack([item['input_ids'] for item in batch['labels']),
+        'tar': torch.stack([item['tar'] for item in batch]),
+        }
 
-        return batch
+        return batch_dict
     
 
 
