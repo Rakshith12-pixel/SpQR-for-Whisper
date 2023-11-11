@@ -711,7 +711,57 @@ if __name__ == "__main__":
         print("\n Warning: You are quantizing quantized model!")
     quant_model=quantize_model(model, args, device)
 
-    print("\n============ Evaluating perplexity... ============")
+    print("\n============ Evaluating CER... ============")
+    def evaluate_cer(model):
+        model.eval()
+        dataloader = get_loaders(
+            args.dataset,
+            nsamples=args.nsamples,
+            seed=args.seed,
+            model_path=args.model_path,
+            seqlen=model.seqlen,
+        )
+        val_loss = 0
+        for batch in dataloader:
+            with torch.no_grad():
+                outputs = model(**batch)
+                val_loss += outputs.loss.item()
+
+                    # compute metric
+                    # generate and calculate cer, wer
+                    ## slow ##
+                output_ids = accelerator.unwrap_model(model).generate(
+                        batch["input_features"],
+                        generation_config=generation_config,
+                        task=args.task,
+                        language=args.model_lang,
+                        is_multilingual=True,
+                        **gen_kwargs)
+                    # pad_acrss_processes recursively pads the tensors 
+                    # in a nested list/tuple/dictionary of tensors from all devices 
+                    # to the same size so they can safely be gathered
+                output_ids = accelerator.pad_across_processes(output_ids, dim=1, pad_index=tokenizer.pad_token_id)
+                label_ids = accelerator.pad_across_processes(batch["labels"], dim=1, pad_index=tokenizer.pad_token_id)
+                    # gather from all devices
+                output_ids = accelerator.gather(output_ids)  #.cpu().numpy()  # gather_for_metrics
+                label_ids = accelerator.gather(label_ids)  #.cpu().numpy()  # gather_for_metrics
+                    # decode ids
+                label_ids[label_ids == -100] = processor.tokenizer.pad_token_id
+                predictions = processor.batch_decode(output_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+                    # we do not want to group tokens when computing the metrics
+                references = processor.batch_decode(
+                        label_ids,
+                        group_tokens=False,
+                        skip_special_tokens=True,
+                        clean_up_tokenization_spaces=True)
+            cer_metric.add_batch(predictions=predictions, references=references)
+                    
+    cer_result = cer_metric.compute()
+    return cer_result
+
+model = WHisperForConditionalGeneration("/whisper finetuned on hindi")
+evaluate_cer(model)
+print("cer is {}".format(cer_result*100))
     #torch.cuda.reset_peak_memory_stats()
 
 # Define a custom dataset class
