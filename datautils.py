@@ -212,23 +212,24 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 
         batch["labels"] = labels
         
-        for _ in range(nsamples):
-            i = random.randint(0, labels.shape[1] - 20 - 1)
-            j = i + 20
-            inp = labels[:, i:j]
-            tar = inp.clone()
-            tar[:, :-1] = -100
-        batch_dict = {
-        'input_ids': torch.stack([item['input_ids'] for item in batch['labels']),
-        'tar': torch.stack([item['tar'] for item in batch]),
-        }
+        #for _ in range(nsamples):
+        #    i = random.randint(0, labels.shape[1] - 20 - 1)
+        #    j = i + 20
+        #    inp = labels[:, i:j]
+        #    tar = inp.clone()
+        #    tar[:, :-1] = -100
+        #batch_dict = {
+        #'input_ids': torch.stack([item['input_ids'] for item in batch['labels']),
+        #'tar': torch.stack([item['tar'] for item in batch]),
+        #}
 
-        return batch_dict
+        return batch
     
 
 
 def train():
     # extractor, tokenizer, processor
+    #these are downloaded and saved locally
     feature_extractor = WhisperFeatureExtractor.from_pretrained("openai/whisper-small")
     tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-small", language="hi", task="transcribe")
     # We only need to set the task id when the language is specified (i.e. in a multilingual setting)
@@ -236,7 +237,7 @@ def train():
     processor = WhisperProcessor.from_pretrained("openai/whisper-small", language="hi", task="transcribe")
 
     # model
-    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small") #use model finetuned on hindi
     #model.config.forced_decoder_ids = None
     model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language="hi", task="transcribe")
     model.config.suppress_tokens = []
@@ -255,8 +256,8 @@ def train():
 
     # dataset
     common_voice = DatasetDict()
-    common_voice["train"] = load_dataset("mozilla-foundation/common_voice_11_0","hi", split="train+validation")
-    common_voice["test"] = load_dataset("mozilla-foundation/common_voice_11_0", "hi", split="test")
+    common_voice["train"] = load_dataset("mozilla-foundation/common_voice_11_0","hi", split="train+validation") #load from disk
+    common_voice["test"] = load_dataset("mozilla-foundation/common_voice_11_0", "hi", split="test") #load from disk
 
 #    with accelerator.main_process_first():
         # remove unused columns
@@ -264,10 +265,10 @@ def train():
 
     #select small dataset for testing
     #if args.max_train_samples is not None:
-    common_voice["train"] = common_voice["train"].select(range(100))
+    common_voice["train"] = common_voice["train"].select(range(5000))
 
     #if args.max_test_samples is not None:
-    common_voice["test"] = common_voice["test"].select(range(100))
+    common_voice["test"] = common_voice["test"].select(range(1000))
 
      # resample to 16kHz
     common_voice = common_voice.cast_column("audio", Audio(sampling_rate=16000))
