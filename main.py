@@ -714,7 +714,7 @@ if __name__ == "__main__":
     print("\n============ Evaluating CER... ============")
     def evaluate_cer(model):
         model.eval()
-        dataloader = get_loaders(
+        dataloader = get_test_loader(
             args.dataset,
             nsamples=args.nsamples,
             seed=args.seed,
@@ -725,8 +725,6 @@ if __name__ == "__main__":
         for batch in dataloader:
             with torch.no_grad():
                 outputs = model(**batch)
-                val_loss += outputs.loss.item()
-
                     # compute metric
                     # generate and calculate cer, wer
                     ## slow ##
@@ -759,7 +757,6 @@ if __name__ == "__main__":
     cer_result = cer_metric.compute()
     return cer_result
 
-model = WHisperForConditionalGeneration("/whisper finetuned on hindi")
 evaluate_cer(model)
 print("cer is {}".format(cer_result*100))
     #torch.cuda.reset_peak_memory_stats()
