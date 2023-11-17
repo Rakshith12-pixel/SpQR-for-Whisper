@@ -26,3 +26,20 @@ refrences are ['इंद्राणी ने माना- शीना क�
 time for computation of CER is: 496.9
 CER(cer_result*100) value is 0.5373073803730738
 data points = 250
+
+
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-01 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 4 --sym global_ol_share:  16.536%,  number of data points are 250 CER(cer_result*100) value is 17.862969004893962
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 9.5e-01 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 4 --sym  global_ol_share:  8.413%  number of data points are 250 CER(cer_result*100) value is 129.03752039151712
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-04 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 4 --sym  global_ol_share:  89.100% number of data points are 250 CER(cer_result*100) value is 12.805872756933114
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 4 --sym  global_ol_share:  98.910%  number of data points are 250 CER(cer_result*100) value is 12.64274061990212
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 1.5e-00 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 4 --sym  global_ol_share:  5.743%  number of data points are 250  CER(cer_result*100) value is 592.0065252854813
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-01 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 10 --sym  global_ol_share:  27.997% number of data points are 250  CER(cer_result*100) value is 21.61500815660685
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 10 --sym  global_ol_share:  69.084%  number of data points are 250 CER(cer_result*100) value is 12.64274061990212
+
