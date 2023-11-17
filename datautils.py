@@ -361,13 +361,151 @@ def train():
         batch_size=4,
     )
     return train_dataloader
+def test():
+    # extractor, tokenizer, processor
+    #these are downloaded and saved locally
+    feature_extractor = WhisperFeatureExtractor.from_pretrained("openai/whisper-small")
+    tokenizer = WhisperTokenizer.from_pretrained("openai/whisper-small", language="hi", task="transcribe")
+    # We only need to set the task id when the language is specified (i.e. in a multilingual setting)
+    tokenizer.set_prefix_tokens(language="hi", task="transcribe")
+    processor = WhisperProcessor.from_pretrained("openai/whisper-small", language="hi", task="transcribe")
 
+    # model
+    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small") #use model finetuned on hindi
+    #model.config.forced_decoder_ids = None
+    model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language="hi", task="transcribe")
+    model.config.suppress_tokens = []
+
+    if model.config.decoder_start_token_id is None:
+        raise ValueError("Make sure that `config.decoder_start_token_id` is correctly defined")
+
+
+#    if args.freeze_encoder:
+#        model.freeze_encoder()
+#        model.model.encoder.gradient_checkpointing = False
+
+
+    ## save config ##
+
+
+    # dataset
+    common_voice = DatasetDict()
+    common_voice["train"] = load_dataset("mozilla-foundation/common_voice_11_0","hi", split="train+validation") #load from disk
+    common_voice["test"] = load_dataset("mozilla-foundation/common_voice_11_0", "hi", split="test") #load from disk
+
+#    with accelerator.main_process_first():
+        # remove unused columns
+    common_voice = common_voice.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "path", "segment", "up_votes"])
+
+    #select small dataset for testing
+    #if args.max_train_samples is not None:
+    common_voice["train"] = common_voice["train"].select(range(5000))
+
+    #if args.max_test_samples is not None:
+    common_voice["test"] = common_voice["test"].select(range(1000))
+
+     # resample to 16kHz
+    common_voice = common_voice.cast_column("audio", Audio(sampling_rate=16000))
+
+
+    # if SpecAugment is used for whisper models, return attention_mask to guide the mask along time axis
+    forward_attention_mask = (
+        getattr(model.config, "model_type", None) == "whisper"
+        and getattr(model.config, "apply_spec_augment", False)
+        and getattr(model.config, "mask_time_prob", 0) > 0
+    )
+    # other hyperparameters
+    max_input_length = 20 * feature_extractor.sampling_rate
+    min_input_length = 0 * feature_extractor.sampling_rate
+    #audio_column_name = args.audio_column_name
+    #num_workers = args.num_workers
+    #text_column_name = args.text_column_name
+    #do_lower_case = args.do_lower_case
+    model_input_name = feature_extractor.model_input_names[0]
+
+    # function to vectorize dataset
+    #def prepare_dataset(batch):
+        # load and resample audio data from 48 to 16kHz
+        #audio = batch["audio"]
+
+        # compute log-Mel input features from input audio array 
+        #features = feature_extractor(audio["array"], sampling_rate=audio["sampling_rate"], return_attention_mask=True)
+        #batch["input_features"] = features.input_features[0]
+        #batch["attention_mask"] = features.attention_mask[0]
+
+        # encode target text to label ids 
+        #batch["labels"] = tokenizer(batch["sentence"]).input_ids
+
+        #return batch
+    
+    def prepare_dataset(batch):
+        # process audio
+        sample = batch["audio"]
+        inputs = feature_extractor(
+            sample["array"],
+            sampling_rate=sample["sampling_rate"],
+            return_attention_mask=forward_attention_mask
+        )
+        batch["input_features"] = inputs.input_features[0]
+        # process audio length
+        batch[model_input_name] = inputs.get(model_input_name)[0]
+        batch["input_length"] = len(sample["array"])
+        if forward_attention_mask:
+            batch["attention_mask"] = inputs.get("attention_mask")[0]
+
+        # process targets
+        input_str = batch["sentence"]  # do lower
+        batch["labels"] = tokenizer(input_str).input_ids
+        return batch
+    
+    
+#    with accelerator.main_process_first():
+        # vectorize dataset
+    common_voice = common_voice.map(prepare_dataset,remove_columns=common_voice.column_names["train"])
+
+
+    # filter data that is shorter than min_input_length or longer than
+    # max_input_length
+ #   def is_audio_in_length_range(length):
+ #       return length > min_input_length and length < max_input_length
+
+ #   common_voice = common_voice.filter(
+ #       is_audio_in_length_range,
+ #       input_columns=["audio"]
+ #   )
+
+
+
+    # cer and wer
+#    cer_metric = evaluate.load("cer")
+#    wer_metric = evaluate.load("wer")
+
+    # data collator
+    data_collator = DataCollatorSpeechSeq2SeqWithPadding(
+        processor=processor,
+        decoder_start_token_id=model.config.decoder_start_token_id,
+        forward_attention_mask=forward_attention_mask,
+    )
+
+    # data loaders
+    test_dataloader = DataLoader(
+        common_voice["test"],
+        shuffle=True,
+        collate_fn=data_collator,
+        batch_size=4,
+    )
+    return train_dataloader
 #    parser.add_argument(
 #        "--output_dir",
 #        default=root+'/models/whisper/'+'whisper_small_cv11',
 #        type=str,
 #        help="The output directory where the model checkpoints and predictions will be written.",
 #    11
+
+
+def get_test_loaders():
+    data =test()
+    return data
 
 def get_loaders(name, nsamples=128, seed=0, seqlen=2048, eval_mode=False, model_path=None):
 
