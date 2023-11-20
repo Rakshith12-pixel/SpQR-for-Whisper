@@ -356,6 +356,92 @@ def quantize_nearest(model, args, dev):
     return None, args.wbits
 
 
+    print("\n============ Evaluating CER... ============")
+@torch.no_grad()
+def evaluate_cer(model):
+  print("model size used in CER is {}".format(sys.getsizeof(model)))
+  cer_metric = evaluate.load("/home/ujan/cer.py")
+  feature_extractor = AutoFeatureExtractor.from_pretrained("/home/ujan/speech-processing/models/whisper/whisper-small_Datasets")
+  tokenizer = AutoTokenizer.from_pretrained("/home/ujan/speech-processing/models/whisper/whisper-small_Datasets")
+    # We only need to set the task id when the language is specified (i.e. in a multilingual setting)
+  tokenizer.set_prefix_tokens(language="hi", task="transcribe")
+  processor = AutoProcessor.from_pretrained("/home/ujan/speech-processing/models/whisper/whisper-small_Datasets")
+  accelerator = Accelerator()
+    # model
+    #model = AutoModel.from_pretrained("/home/ujan/whispermodel")
+    #model.config.forced_decoder_ids = None
+  model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language="hi", task="transcribe")
+  model.config.suppress_tokens = []
+
+  if model.config.decoder_start_token_id is None:
+    raise ValueError("Make sure that `config.decoder_start_token_id` is correctly defined")
+  print("loading data for CER")
+  test_dataloader = get_test_loaders(
+            args.dataset,
+            nsamples=args.nsamples,
+            seed=32,
+            seqlen=20,
+            eval_mode=True)
+  print(test_dataloader)
+  print("number of data points are {}".format(len(test_dataloader.sampler)))
+  tick = time.time()
+      #train_dataloader = get_loaders(
+      #  common_voice["train"],
+      #  shuffle=True,
+      #  collate_fn=data_collator,
+      #  batch_size=args.train_batch_size)
+      #model, train__dataloader = accelerator.prepare(model, eval_dataloader)
+
+  for batch in test_dataloader:
+    with torch.no_grad():
+         # print(type(model))
+         # print(batch)
+      tick = time.time()
+
+      outputs = model(**batch)
+
+      print(f"time for inference for a batch of data on quantized model is: {time.time() - tick:.1f}")
+
+      model2 = WhisperForConditionalGeneration.from_pretrained("/home/ujan/distillation-asr/whisper-models/finetuned/whisper-small/hindi/checkpoint")
+
+      tick = time.time()
+
+      outputs2 = model2(**batch)
+
+      print(f"time for inference for a batch of data on unquantized model is: {time.time() - tick:.1f}")
+                    # compute metric
+                    # generate and calculate cer, wer
+                    ## slow ##
+    output_ids = accelerator.unwrap_model(model).generate(batch["input_features"])
+                    # pad_acrss_processes recursively pads the tensors 
+                    # in a nested list/tuple/dictionary of tensors from all devices 
+                    # to the same size so they can safely be gathered
+    output_ids = accelerator.pad_across_processes(output_ids, dim=1, pad_index=tokenizer.pad_token_id)
+    output_ids = accelerator.gather(output_ids)
+    print("output_ids 2 are {}".format(output_ids))  #.cpu().numpy()  # gather_for_metrics
+    label_ids = accelerator.gather(label_ids)  #.cpu().numpy()  # gather_for_metrics
+                    # decode ids
+    label_ids[label_ids == -100] = processor.tokenizer.pad_token_id
+    predictions = processor.batch_decode(output_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+    print("predictions are {}".format(predictions))
+    references = processor.batch_decode(
+                        label_ids,
+                        group_tokens=False,
+                        skip_special_tokens=True,
+                        clean_up_tokenization_spaces=True)
+    print("refrences are {}".format(references))
+    cer_metric.add_batch(predictions=predictions, references=references)
+         #           wer_metric.add_batch(predictions=predictions, references=references)
+
+          #          eval_bar.update(1)
+
+           #     eval_bar.refresh()
+           #     eval_bar.reset()
+
+    cer_result = cer_metric.compute()
+  print("CER(cer_result*100) value is {}".format(cer_result*100))
+                                                                                                                             
+
 @torch.no_grad()
 def perplexity_eval(model, testenc, args, dev):
     print(f"\nEvaluating perplexity for {args.dataset_name} dataset ...")
@@ -703,63 +789,13 @@ if __name__ == "__main__":
 
     print("============  Loading model... ============")
     model = get_model(args.model_path, args.load, args.dtype).train(False)
- #   model = get_model("openai/whisper-small").train(False)
-#    size_before=sys.getsizeof(model)
 
     print("\n============ Quantizing model... ============")
     if args.wbits < 16 and args.load:
         print("\n Warning: You are quantizing quantized model!")
     quant_model=quantize_model(model, args, device)
 
-    print("\n============ Evaluating CER... ============")
-    def evaluate_cer(model):
-        model.eval()
-        dataloader = get_test_loader(
-            args.dataset,
-            nsamples=args.nsamples,
-            seed=args.seed,
-            model_path=args.model_path,
-            seqlen=model.seqlen,
-        )
-        val_loss = 0
-        for batch in dataloader:
-            with torch.no_grad():
-                outputs = model(**batch)
-                    # compute metric
-                    # generate and calculate cer, wer
-                    ## slow ##
-                output_ids = accelerator.unwrap_model(model).generate(
-                        batch["input_features"],
-                        generation_config=generation_config,
-                        task=args.task,
-                        language=args.model_lang,
-                        is_multilingual=True,
-                        **gen_kwargs)
-                    # pad_acrss_processes recursively pads the tensors 
-                    # in a nested list/tuple/dictionary of tensors from all devices 
-                    # to the same size so they can safely be gathered
-                output_ids = accelerator.pad_across_processes(output_ids, dim=1, pad_index=tokenizer.pad_token_id)
-                label_ids = accelerator.pad_across_processes(batch["labels"], dim=1, pad_index=tokenizer.pad_token_id)
-                    # gather from all devices
-                output_ids = accelerator.gather(output_ids)  #.cpu().numpy()  # gather_for_metrics
-                label_ids = accelerator.gather(label_ids)  #.cpu().numpy()  # gather_for_metrics
-                    # decode ids
-                label_ids[label_ids == -100] = processor.tokenizer.pad_token_id
-                predictions = processor.batch_decode(output_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True)
-                    # we do not want to group tokens when computing the metrics
-                references = processor.batch_decode(
-                        label_ids,
-                        group_tokens=False,
-                        skip_special_tokens=True,
-                        clean_up_tokenization_spaces=True)
-            cer_metric.add_batch(predictions=predictions, references=references)
-                    
-    cer_result = cer_metric.compute()
-    return cer_result
-
-evaluate_cer(model)
-print("cer is {}".format(cer_result*100))
-    #torch.cuda.reset_peak_memory_stats()
+#torch.cuda.reset_peak_memory_stats()
 
 # Define a custom dataset class
 
