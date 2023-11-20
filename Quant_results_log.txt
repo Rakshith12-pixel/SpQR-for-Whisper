@@ -43,3 +43,22 @@ data points = 250
 
 --max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 10 --sym  global_ol_share:  69.084%  number of data points are 250 CER(cer_result*100) value is 12.64274061990212
 
+
+--WITH INFERENCE TIMES(average calculated  from inference times on each batch)-- ** implies quantized model was faster
+
+-max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 4 --sym 100 test data points  avg time for inference on quantized model =16.75s avg time of inference on unquantized model(hindi checkpoint)= 17.925 global_ol_share:  98.910% CER=11.855 **
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 10 --sym 150 test points avg time on quant = 40.48, on un quant = 38.06 global_ol_share:  69.084% CER=14.7
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-03 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 250 --wbits 4 --sym  global_ol_share:  74.363% number of data points are 1000 time on quantized = 27.20 on unquant = 26.9 CER(cer_result*100) value is 14.484679665738161
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 500 --wbits 10 --sym  global_ol share = 69.084% 150 test points, quant time = 41.04 unquant time = 40.98  CER(cer_result*100) value is 14.73951715374841
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9 --permutation_order act_order --nsamples 500 --wbits 2 --sym   global_ol_share:  99.699%  no.of test data =150 quant time =42.2 unquant time = 42
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 32 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3  --permutation_order act_order --nsamples 250 --wbits 8 --sym  (no damp)  global_ol_share:  82.349%  quant time =47.02 unquant time =42.8
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-03 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.9  --nsamples 250 --wbits 4 --sym
+quant time =40.14 unquant = 41.3 (no permutation of weights) CER(cer_result*100) value is 15.628970775095299 global_ol_share:  74.842%  **
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 2 quant time =19.4 unquant time =21 CER(cer_result*100) value is 14.866581956797967 ol_share =99.8%   **
