@@ -62,3 +62,13 @@ data points = 250
 quant time =40.14 unquant = 41.3 (no permutation of weights) CER(cer_result*100) value is 15.628970775095299 global_ol_share:  74.842%  **
 
 --max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 256 --seed 32 --qq_scale_bits 3 --qq_zero_bits 3 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 2 quant time =19.4 unquant time =21 CER(cer_result*100) value is 14.866581956797967 ol_share =99.8%   **
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 16 --seed 32 --qq_scale_bits 8 --qq_zero_bits 8 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 4 --sym no.of data points =50, batch size = 50 avg time for inference on quantized model = 89.1688 avg time for inference on unquantized model is 111.1342 CER is 14.5707 
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 16 --seed 32 --qq_scale_bits 8 --qq_zero_bits 8 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 4 --sym no.of data points =50, batch size = 50 avg time for inference on quantized model = 184.7250 avg time for inference on unquantized model is 339.2244 CER is 14.5707 
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 16 --seed 32 --qq_scale_bits 8 --qq_zero_bits 8 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 4 --sym no.of data points =50, batch size = 1 avg time for inference on quantized model = 5.8945 avg time for inference on unquantized model is 5.7804 CER is 23.0706
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 16 --seed 32 --qq_scale_bits 8 --qq_zero_bits 8 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 4 --sym no.of data points =10, batch size = 1 avg time for inference on quantized model = 4.92 avg time for inference on unquantized model is 4.51 CER is 1.538
+
+--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 2.5e-06 --groupsize 16 --seed 32 --qq_scale_bits 8 --qq_zero_bits 8 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 4 --sym no.of data points =10, batch size = 10 avg time for inference on quantized model = 29.94 avg time for inference on unquantized model is 26.29 CER is 17.21
