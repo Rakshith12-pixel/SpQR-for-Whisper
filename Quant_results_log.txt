@@ -80,3 +80,12 @@ quant time =40.14 unquant = 41.3 (no permutation of weights) CER(cer_result*100)
 
 --max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 3.5e-07 --groupsize 16 --seed 32 --qq_scale_bits 8 --qq_zero_bits 8 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 4 --sym data=1000, batch size =1
 
+retried for outlier = e-06.--seed 32 --qq_scale_bits 8 --qq_zero_bits 8 --percdamp 0.5 --permutation_order act_order --nsamples 500 --wbits 4 --sym avg time for inference on quantized model is 2.669avg time for inference on unquantized model is 2.7144 CER(cer_result*100) value for quantized model is 21.62162 no.of data =2000 batch size = 1
+
+retry for higher threshold and nop symmetrci quantization
+
+
+--using new intialization scheme--
+*****--max_train_samples 100 --max_test_samples 100 --perchannel --outlier_threshold 3.5e-07 --groupsize 16 --seed 32 --qq_scale_bits 8 --qq_zero_bits 8 --percdamp 0.5 --permutation_order act_order --nsamples 50 --wbits 4 --sym 100 data with batch size 1, k,q,v,out,fc1,1 quant CER(cer_result*100) value for quantized model is 8.928571428571429
+avg time for inference on quantized model is 1.4017663860321046
+avg time for inference on unquantized model is 1.3512669062614442
